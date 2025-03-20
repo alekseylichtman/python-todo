@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+**todos.db
 
 # C extensions
 *.so
