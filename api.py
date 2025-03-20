@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from db import Todo, SessionLocal, init_db
@@ -8,6 +9,15 @@ from typing import Optional
 init_db()
 
 app = FastAPI(title="Todo API")
+
+# Enable CORS: Allow all origins (for development) or restrict as needed.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Replace ["*"] with a list of allowed origins for production.
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Pydantic Schemas
 class TodoCreate(BaseModel):
