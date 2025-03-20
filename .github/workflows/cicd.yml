@@ -1,19 +1,45 @@
-name: Build and Deploy to Cloud Run
+name: CI/CD
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build-and-deploy:
+  tests:
+    name: Run Tests
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Tests
+        run: python -m pytest
+
+  deploy:
+    name: Build and Deploy to Cloud Run
+    runs-on: ubuntu-latest
+    needs: tests
     env:
       GCP_PROJECT: python-todo-app-454322
       GCP_REGION: us-central1
       IMAGE: gcr.io/python-todo-app-454322/python-todo-app
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -35,9 +61,9 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy python-todo-app \
-          --image $IMAGE \
-          --platform managed \
-          --region $GCP_REGION \
-          --allow-unauthenticated \
-          --quiet \
-          --verbosity=debug
+            --image $IMAGE \
+            --platform managed \
+            --region $GCP_REGION \
+            --allow-unauthenticated \
+            --quiet \
+            --verbosity=debug
