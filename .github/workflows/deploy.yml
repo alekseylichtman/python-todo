@@ -35,8 +35,9 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy python-todo-app \
-            --image $IMAGE \
-            --platform managed \
-            --region $GCP_REGION \
-            --allow-unauthenticated \
-            --quiet
+          --image $IMAGE \
+          --platform managed \
+          --region $GCP_REGION \
+          --allow-unauthenticated \
+          --quiet \
+          --verbosity=debug
