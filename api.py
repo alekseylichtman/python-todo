@@ -1,10 +1,8 @@
-# api.py
 from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from db import Todo, SessionLocal, init_db
 from typing import Optional
-from pydantic import BaseModel
 
 # Initialize the database (creates tables)
 init_db()
@@ -19,14 +17,12 @@ class TodoUpdate(BaseModel):
     title: Optional[str] = None
     is_complete: Optional[bool] = None
 
-
 class TodoOut(BaseModel):
     id: int
     title: str
     is_complete: bool
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Dependency to get DB session
 def get_db():
