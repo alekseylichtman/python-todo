@@ -1,19 +1,21 @@
+# api.py
 from fastapi import FastAPI, HTTPException, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from db import Todo, SessionLocal, init_db
 from typing import Optional
+from pydantic import BaseModel
 
 # Initialize the database (creates tables)
 init_db()
 
 app = FastAPI(title="Todo API")
 
-# Enable CORS: Allow all origins (for development) or restrict as needed.
+from fastapi.middleware.cors import CORSMiddleware
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Replace ["*"] with a list of allowed origins for production.
+    allow_origins=["*"],  # for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -27,12 +29,14 @@ class TodoUpdate(BaseModel):
     title: Optional[str] = None
     is_complete: Optional[bool] = None
 
+
 class TodoOut(BaseModel):
     id: int
     title: str
     is_complete: bool
 
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        orm_mode = True
 
 # Dependency to get DB session
 def get_db():
