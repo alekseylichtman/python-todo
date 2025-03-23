@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Todo Web App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      max-width: 600px;
+    }
+    h1 {
+      text-align: center;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    /* Container for the API URL field and Accept button in one row */
+    .api-container {
+      display: flex;
+      align-items: center;
+    }
+    .api-container input {
+      flex: 1;
+    }
+    .todo-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+    }
+    .completed {
+      text-decoration: line-through;
+      color: gray;
+    }
+    .todo-actions {
+      display: flex;
+      gap: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Todo Web App</h1>
+  <p>Default debug local url: http://localhost:8080</p>
+  <p>Current API URL: <span id="displayApiUrl">http://localhost:8080</span></p>
+
+  <!-- API URL input and Accept button in one row -->
+  <div class="api-container">
+    <input type="text" id="apiUrl" placeholder="Enter API url" value="http://localhost:8080">
+    <button id="acceptApiUrl">Accept</button>
+  </div>
+
+  <!-- Input for adding a new todo (displayed below the API container) -->
+  <div style="margin-top: 20px;">
+    <input type="text" id="newTodoTitle" placeholder="Enter new todo">
+    <button onclick="addTodo()">Add Todo</button>
+  </div>
+
+  <h2>Todos</h2>
+  <div id="todosContainer">
+    <!-- Todos will be rendered here -->
+  </div>
+
+  <script>
+    // Check localStorage for a saved API URL; if found, update the input and display
+    const apiUrlInput = document.getElementById("apiUrl");
+    const displayApiUrl = document.getElementById("displayApiUrl");
+    const savedApiUrl = localStorage.getItem("apiUrl");
+    if (savedApiUrl) {
+      apiUrlInput.value = savedApiUrl;
+      displayApiUrl.textContent = savedApiUrl;
+    } else {
+      // Save the default value if nothing is stored
+      localStorage.setItem("apiUrl", apiUrlInput.value);
+    }
+
+    // Update the display when the API URL input changes
+    apiUrlInput.addEventListener('input', function() {
+      displayApiUrl.textContent = apiUrlInput.value;
+    });
+
+    // Accept button saves the new API URL and reloads the page so the new URL persists
+    document.getElementById("acceptApiUrl").addEventListener("click", function() {
+      localStorage.setItem("apiUrl", apiUrlInput.value);
+      location.reload();
+    });
+
+    // Helper function to get the current API base URL from the input field
+    function getAPIBase() {
+      return document.getElementById("apiUrl").value;
+    }
+
+    // Function to show error alerts with a title, description, URL, and error code if applicable
+    function showErrorAlert(title, description, url, errorCode) {
+      let message = `${title}\n${description}\nURL: ${url}`;
+      if (errorCode) {
+        message += `\nError Code: ${errorCode}`;
+      }
+      alert(message);
+    }
+
+    // Fetch and render todos
+    async function fetchTodos() {
+      try {
+        const apiBase = getAPIBase();
+        const url = `${apiBase}/todos`;
+        const response = await fetch(url);
+        if (!response.ok) {
+          showErrorAlert("Fetch Todos Error", "Failed to fetch todos", url, response.status);
+          return;
+        }
+        const todos = await response.json();
+        renderTodos(todos);
+      } catch (error) {
+        console.error("Error fetching todos:", error);
+        showErrorAlert("Fetch Todos Error", error.message, `${getAPIBase()}/todos`);
+      }
+    }
+
+    // Render todos to the page
+    function renderTodos(todos) {
+      const container = document.getElementById("todosContainer");
+      container.innerHTML = "";
+
+      if (todos.length === 0) {
+        container.innerHTML = "<p>No todos found.</p>";
+        return;
+      }
+
+      todos.forEach(todo => {
+        const div = document.createElement("div");
+        div.className = "todo-item";
+
+        const titleInput = document.createElement("input");
+        titleInput.type = "text";
+        titleInput.value = todo.title;
+        titleInput.className = todo.is_complete ? "completed" : "";
+        titleInput.addEventListener("change", () => updateTodo(todo.id, titleInput.value, todo.is_complete));
+
+        const statusToggle = document.createElement("input");
+        statusToggle.type = "checkbox";
+        statusToggle.checked = todo.is_complete;
+        statusToggle.addEventListener("change", () => updateTodo(todo.id, todo.title, statusToggle.checked));
+
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.onclick = () => deleteTodo(todo.id);
+
+        const actionsDiv = document.createElement("div");
+        actionsDiv.className = "todo-actions";
+        actionsDiv.appendChild(statusToggle);
+        actionsDiv.appendChild(deleteButton);
+
+        div.appendChild(titleInput);
+        div.appendChild(actionsDiv);
+        container.appendChild(div);
+      });
+    }
+
+    // Add a new todo
+    async function addTodo() {
+      const titleInput = document.getElementById("newTodoTitle");
+      const title = titleInput.value.trim();
+      if (!title) return;
+
+      try {
+        const apiBase = getAPIBase();
+        const url = `${apiBase}/todos`;
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title })
+        });
+        if (!response.ok) {
+          showErrorAlert("Add Todo Error", "Failed to add todo", url, response.status);
+          return;
+        }
+        titleInput.value = "";
+        fetchTodos();
+      } catch (error) {
+        console.error("Error adding todo:", error);
+        showErrorAlert("Add Todo Error", error.message, `${getAPIBase()}/todos`);
+      }
+    }
+
+    // Update a todo's title or completion status
+    async function updateTodo(id, title, isComplete) {
+      try {
+        const apiBase = getAPIBase();
+        const url = `${apiBase}/todos/${id}`;
+        const response = await fetch(url, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, is_complete: isComplete })
+        });
+        if (!response.ok) {
+          showErrorAlert("Update Todo Error", "Failed to update todo", url, response.status);
+          return;
+        }
+        fetchTodos();
+      } catch (error) {
+        console.error("Error updating todo:", error);
+        showErrorAlert("Update Todo Error", error.message, `${getAPIBase()}/todos/${id}`);
+      }
+    }
+
+    // Delete a todo
+    async function deleteTodo(id) {
+      try {
+        const apiBase = getAPIBase();
+        const url = `${apiBase}/todos/${id}`;
+        const response = await fetch(url, { method: "DELETE" });
+        if (!response.ok) {
+          showErrorAlert("Delete Todo Error", "Failed to delete todo", url, response.status);
+          return;
+        }
+        fetchTodos();
+      } catch (error) {
+        console.error("Error deleting todo:", error);
+        showErrorAlert("Delete Todo Error", error.message, `${getAPIBase()}/todos/${id}`);
+      }
+    }
+
+    // Load todos on page load
+    fetchTodos();
+  </script>
+</body>
+</html>
