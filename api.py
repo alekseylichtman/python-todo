@@ -10,9 +10,6 @@ from pydantic import BaseModel
 init_db()
 
 app = FastAPI(title="Todo API")
-
-from fastapi.middleware.cors import CORSMiddleware
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # for development
