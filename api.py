@@ -5,14 +5,12 @@ from sqlalchemy.orm import Session
 from db import Todo, SessionLocal, init_db
 from typing import Optional
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 # Initialize the database (creates tables)
 init_db()
 
 app = FastAPI(title="Todo API")
-
-from fastapi.middleware.cors import CORSMiddleware
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # for development
